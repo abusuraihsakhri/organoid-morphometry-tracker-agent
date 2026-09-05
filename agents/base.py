@@ -5,6 +5,7 @@ Enterprise Security, PHI Outbound Guard, and HMAC-SHA256 Audit Trail.
 import os
 import re
 import json
+import math
 import time
 import hmac
 import hashlib
@@ -57,7 +58,15 @@ class PHIGuard:
 class AuditTrail:
     """Cryptographic Tamper-Evident HMAC-SHA256 Audit Trail."""
     def __init__(self, secret_key: Optional[str] = None):
-        self.secret_key = (secret_key or os.getenv("AUDIT_SECRET_KEY", "organoid-morphometry-tracker-agent-master-audit-key-2026")).encode("utf-8")
+        resolved_key = secret_key or os.getenv("AUDIT_SECRET_KEY")
+        if not resolved_key:
+            raise RuntimeError(
+                "AUDIT_SECRET_KEY environment variable must be set. "
+                "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\""
+            )
+        if len(resolved_key) < 16:
+            raise RuntimeError("AUDIT_SECRET_KEY must be at least 16 characters long for HMAC-SHA256 security.")
+        self.secret_key = resolved_key.encode("utf-8")
         self.logs: List[Dict[str, Any]] = []
 
     def log(self, actor: str, actor_tier: str, event_type: str, details: Dict[str, Any]) -> Dict[str, Any]:
@@ -93,7 +102,28 @@ class AuditTrail:
         return self.logs
 
 
-GLOBAL_AUDIT = AuditTrail()
+class _AuditTrailProxy:
+    """Lazy-initialized audit trail that defers key validation until first use."""
+
+    def __init__(self):
+        self._instance: Optional[AuditTrail] = None
+
+    def _get_instance(self) -> AuditTrail:
+        if self._instance is None:
+            self._instance = AuditTrail()
+        return self._instance
+
+    def log(self, actor: str, actor_tier: str, event_type: str, details: Dict[str, Any]) -> Dict[str, Any]:
+        return self._get_instance().log(actor, actor_tier, event_type, details)
+
+    def get_trail(self) -> List[Dict[str, Any]]:
+        return self._get_instance().get_trail()
+
+    def verify_integrity(self) -> bool:
+        return self._get_instance().verify_integrity()
+
+
+GLOBAL_AUDIT = _AuditTrailProxy()
 
 
 class AuditLogger:
@@ -108,6 +138,34 @@ class AuditLogger:
     @staticmethod
     def verify_integrity() -> bool:
         return GLOBAL_AUDIT.verify_integrity()
+
+
+MAX_STRING_LENGTH = 1000
+MAX_METRIC_VALUE = 1e9
+
+
+def validate_input_string(value: str, field_name: str = "input") -> str:
+    """Validate and sanitize string input for length and content safety."""
+    if not isinstance(value, str):
+        raise SecurityException(f"{field_name} must be a string, got {type(value).__name__}")
+    if len(value) > MAX_STRING_LENGTH:
+        raise ResourceLimitExceededException(
+            f"{field_name} exceeds maximum allowed length ({MAX_STRING_LENGTH} characters)"
+        )
+    return value
+
+
+def validate_metric_value(value: float, field_name: str = "metric") -> float:
+    """Validate numeric metric is finite and within acceptable bounds."""
+    if not isinstance(value, (int, float)):
+        raise ResourceLimitExceededException(f"{field_name} must be a number, got {type(value).__name__}")
+    if math.isnan(value) or math.isinf(value):
+        raise ResourceLimitExceededException(f"{field_name} must be a finite number, got {value}")
+    if abs(value) > MAX_METRIC_VALUE:
+        raise ResourceLimitExceededException(
+            f"{field_name} magnitude exceeds maximum allowed value ({MAX_METRIC_VALUE})"
+        )
+    return float(value)
 
 
 class ActionExecutor:

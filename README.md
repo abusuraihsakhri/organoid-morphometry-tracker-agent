@@ -32,36 +32,41 @@
 
 ## 💻 CLI Quickstart & Usage
 
-### 1. Guided Interactive Mode
+### 1. Run a Single Audit Evaluation
 ```bash
-python cli.py
+python cli.py audit --task-id TASK-001 --target KEY-01 --primary 28.5 --secondary 14.2 --critical --status DISCORDANT
 ```
 
-### 2. Direct Parameterized Evaluation
+### 2. Batch Process CSV Records
 ```bash
-python cli.py --task-id <value> --target <value> --primary <value> --secondary <value>
+python cli.py batch -i sample.csv -o results.csv
 ```
 
-### Parameter Reference
-- `--task-id`: Specifies input measurement or parameter value.
-- `--target`: Specifies input measurement or parameter value.
-- `--primary`: Specifies input measurement or parameter value.
-- `--secondary`: Specifies input measurement or parameter value.
-- `--critical`: Specifies input measurement or parameter value.
-- `--status`: Specifies input measurement or parameter value.
-- `--input`: Specifies input measurement or parameter value.
-- `--output`: Specifies input measurement or parameter value.
+### 3. Chat with the Supervisor
+```bash
+python cli.py chat "What is the system status?"
+```
+
+### 4. Verify Audit Trail Integrity
+```bash
+python cli.py verify-audit
+```
+
+### 5. Launch the REST API Server
+```bash
+python cli.py serve --host 127.0.0.1 --port 8000
+```
 
 ### Input Data Schema
 
 | Field | Description | Requirement |
 |:------|:------------|:------------|
-| `task_id` | Parameter / observation metric | Required |
-| `target_identifier` | Parameter / observation metric | Required |
-| `primary_metric` | Parameter / observation metric | Required |
-| `secondary_metric` | Parameter / observation metric | Required |
-| `is_critical_flag` | Parameter / observation metric | Required |
-| `status_descriptor` | Parameter / observation metric | Required |
+| `task_id` | Unique task / case identifier | Required |
+| `target_identifier` | Entity, specimen, or target key | Required |
+| `primary_metric` | Primary domain measurement or score | Required |
+| `secondary_metric` | Secondary kinetic or confidence score | Optional (default: 0.0) |
+| `is_critical_flag` | Emergency escalation trigger | Optional (default: false) |
+| `status_descriptor` | Status code or phenotype descriptor | Optional (default: "NOMINAL") |
 
 ---
 
@@ -75,6 +80,18 @@ python cli.py --task-id <value> --target <value> --primary <value> --secondary <
 
 ---
 
+## 🔧 Configuration
+
+Set the audit secret key (required for HMAC-SHA256 audit trail):
+
+```bash
+# Generate a secure key
+python -c "import secrets; print(secrets.token_hex(32))"
+
+# Set the environment variable
+export AUDIT_SECRET_KEY="your-generated-key"
+```
+
 ## 🧪 Testing & Verification
 
 Run the automated test suite:
@@ -86,7 +103,7 @@ pytest -v
 Execute high-throughput batch simulation benchmarks:
 
 ```bash
-python simulator.py --tasks 1000 --concurrency 8
+python simulator.py 1000
 ```
 
 ---

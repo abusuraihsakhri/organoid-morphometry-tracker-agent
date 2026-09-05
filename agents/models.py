@@ -6,7 +6,9 @@ Standard: CAP / CLSI / ISO Standards
 import datetime
 from enum import Enum
 from typing import Dict, Any, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from .base import validate_input_string, validate_metric_value
 
 
 class UrgencyLevel(str, Enum):
@@ -30,6 +32,16 @@ class SystemTaskPayload(BaseModel):
     is_critical_flag: bool = Field(default=False, description="Emergency escalation or high priority trigger")
     attributes: Dict[str, Any] = Field(default_factory=dict, description="Metadata key-value pairs")
     timestamp: str = Field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
+
+    @field_validator("task_id", "target_identifier", "status_descriptor")
+    @classmethod
+    def validate_string_fields(cls, v: str) -> str:
+        return validate_input_string(v, field_name="text_field")
+
+    @field_validator("primary_metric", "secondary_metric")
+    @classmethod
+    def validate_metric_fields(cls, v: float) -> float:
+        return validate_metric_value(v, field_name="metric")
 
 
 class AgentAlert(BaseModel):

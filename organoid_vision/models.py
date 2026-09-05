@@ -7,6 +7,7 @@ import datetime
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Any
+from agents.base import validate_input_string, validate_metric_value
 
 
 class ExecutionStatus(str, Enum):
@@ -25,6 +26,13 @@ class FrontierPayload:
     is_critical_flag: bool = False
     attributes: Dict[str, Any] = field(default_factory=dict)
     timestamp: str = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
+
+    def __post_init__(self):
+        self.task_id = validate_input_string(self.task_id, "task_id")
+        self.target_identifier = validate_input_string(self.target_identifier, "target_identifier")
+        self.status_descriptor = validate_input_string(self.status_descriptor, "status_descriptor")
+        self.primary_metric = validate_metric_value(self.primary_metric, "primary_metric")
+        self.secondary_metric = validate_metric_value(self.secondary_metric, "secondary_metric")
 
 
 @dataclass
