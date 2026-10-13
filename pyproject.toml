@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "organoid-morphometry-tracker-engine"
+name = "organoid-morphometry-tracker-agent"
 version = "2.0.0"
 description = "OrganoidVision: High-Content Organoid Lumen & Viability Kinetic Engine"
 readme = "README.md"
@@ -16,15 +16,23 @@ classifiers = [
     "Topic :: Security/Cryptography",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "fastapi>=0.110.0",
     "uvicorn[standard]>=0.27.0",
     "pydantic>=2.0.0",
 ]
 
+[project.optional-dependencies]
+test = ["pytest>=8.0", "httpx>=0.27"]
+
+[tool.setuptools]
+packages = ["agents", "organoid_vision"]
+py-modules = ["cli", "enrichment", "simulator", "organoid_vision_app"]
+
 [project.scripts]
 organoid-morphometry-tracker-engine = "organoid_vision.cli:main"
+organoid-morphometry-tracker-agent = "cli:main"
 
 [project.urls]
 Homepage = "https://github.com/abusuraihsakhri/organoid-morphometry-tracker-engine"

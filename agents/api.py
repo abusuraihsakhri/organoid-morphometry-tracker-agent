@@ -1,10 +1,11 @@
 """
 FastAPI REST API Server for Organoid Morphometry Tracker Agent.
 """
-from typing import Dict, Any, List
-from fastapi import FastAPI, HTTPException
+from pathlib import Path
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
-from .base import AuditLogger, PHIGuard
+from .base import AuditLogger, PHIGuard, SecurityException, ResourceLimitExceededException
 from .models import SystemTaskPayload, ConsensusDossier
 from .supervisor import SystemSupervisor
 
@@ -19,6 +20,21 @@ app = FastAPI(
 
 class ChatRequest(BaseModel):
     query: str
+
+
+@app.exception_handler(SecurityException)
+async def security_error_handler(request: Request, exc: SecurityException):
+    return JSONResponse(status_code=400, content={"detail": "Input contains a potentially sensitive identifier."})
+
+
+@app.exception_handler(ResourceLimitExceededException)
+async def resource_error_handler(request: Request, exc: ResourceLimitExceededException):
+    return JSONResponse(status_code=422, content={"detail": str(exc)})
+
+
+@app.get("/", include_in_schema=False)
+def index():
+    return FileResponse(Path(__file__).resolve().parent.parent / "web" / "index.html")
 
 
 @app.get("/health")

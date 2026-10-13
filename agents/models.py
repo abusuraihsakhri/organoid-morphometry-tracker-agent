@@ -4,11 +4,12 @@ Domain: Clinical & Biomedical AI
 Standard: CAP / CLSI / ISO Standards
 """
 import datetime
+import json
 from enum import Enum
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field, field_validator
 
-from .base import validate_input_string, validate_metric_value
+from .base import PHIGuard, SecurityException, validate_input_string, validate_metric_value
 
 
 class UrgencyLevel(str, Enum):
@@ -38,10 +39,25 @@ class SystemTaskPayload(BaseModel):
     def validate_string_fields(cls, v: str) -> str:
         return validate_input_string(v, field_name="text_field")
 
-    @field_validator("primary_metric", "secondary_metric")
+    @field_validator("primary_metric", "secondary_metric", mode="before")
     @classmethod
     def validate_metric_fields(cls, v: float) -> float:
         return validate_metric_value(v, field_name="metric")
+
+    @field_validator("attributes")
+    @classmethod
+    def validate_attributes(cls, value: Dict[str, Any]) -> Dict[str, Any]:
+        try:
+            serialized = json.dumps(value, allow_nan=False, ensure_ascii=False)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("attributes must contain finite JSON-compatible data") from exc
+        if len(serialized) > 10000:
+            raise ValueError("attributes exceed the 10000-character limit")
+        try:
+            PHIGuard.assert_no_phi(serialized)
+        except SecurityException as exc:
+            raise ValueError("attributes contain a potentially sensitive identifier") from exc
+        return value
 
 
 class AgentAlert(BaseModel):
