@@ -58,5 +58,5 @@ jobs:
         from agents.base import PHIGuard, AuditLogger
         PHIGuard.assert_no_phi('SPECIMEN-001')
         assert AuditLogger.verify_integrity() is True
-        print('Security & Zero-PHI Audit Passed!')
+        print('Audit chain and basic identifier-pattern smoke test passed')
         "

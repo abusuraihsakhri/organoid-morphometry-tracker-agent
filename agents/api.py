@@ -16,7 +16,7 @@ supervisor = SystemSupervisor(model_provider="mock")
 
 app = FastAPI(
     title="Organoid Morphometry Tracker Agent API",
-    description="Enterprise Distributed Component Platform (Clinical & Biomedical AI)",
+    description="Research demonstration of numeric threshold screening; not validated clinical decision support",
     version="3.0.0-ENTERPRISE",
 )
 
@@ -54,7 +54,7 @@ def index():
 
 @app.get("/health")
 def health():
-    return {"status": "HEALTHY", "service": "organoid-morphometry-tracker-agent", "domain": "Clinical & Biomedical AI", "standard": "CAP / CLSI / ISO Standards", "version": "3.0.0-ENTERPRISE"}
+    return {"status": "HEALTHY", "service": "organoid-morphometry-tracker-agent", "domain": "Numeric screening demonstration", "standard": "Repository-defined thresholds", "version": "3.0.0-ENTERPRISE"}
 
 
 @app.get("/metrics")
@@ -62,7 +62,7 @@ def metrics():
     return {
         "dossiers_processed_total": len(supervisor.dossier_registry),
         "audit_blocks_total": len(AuditLogger.get_trail()),
-        "system_status": "NOMINAL_OPTIMAL"
+        "system_status": "AVAILABLE"
     }
 
 

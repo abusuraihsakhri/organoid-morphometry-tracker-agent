@@ -90,3 +90,8 @@ def test_frontier_payload_phi_guard():
     from organoid_vision.models import FrontierPayload
     with pytest.raises(SecurityException):
         FrontierPayload("SYNTH", "MRN-123456", 1, 2, "NOMINAL")
+
+def test_container_healthcheck_needs_no_curl():
+    root = Path(__file__).parent.parent
+    assert "curl" not in (root / "docker-compose.yml").read_text(encoding="utf-8")
+    assert "urllib.request" in (root / "Dockerfile").read_text(encoding="utf-8")
