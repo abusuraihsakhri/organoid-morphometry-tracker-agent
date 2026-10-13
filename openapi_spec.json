@@ -1,114 +1,97 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Organoid Morphometry Tracker Engine API",
-    "description": "Enterprise Distributed Component Platform (Clinical & Cryptographic AI) adhering to CAP / CLSI / NIST Standards.",
-    "version": "3.0.0-ENTERPRISE",
-    "contact": {
-      "name": "Dr. Abu Suraih Sakhri",
-      "url": "https://github.com/abusuraihsakhri"
-    }
+    "title": "Organoid Metric Screening API",
+    "description": "Rule-based evaluation of synthetic specimen metrics; not image morphometry or clinical validation.",
+    "version": "3.0.0"
   },
   "paths": {
-    "/health": {
+    "/": {
       "get": {
-        "summary": "Health and metadata check",
+        "summary": "Browser interface",
         "responses": {
           "200": {
-            "description": "System optimal"
+            "description": "HTML"
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "responses": {
+          "200": {
+            "description": "JSON health"
           }
         }
       }
     },
     "/metrics": {
       "get": {
-        "summary": "Prometheus operational metrics",
+        "summary": "JSON counters",
         "responses": {
           "200": {
-            "description": "Prometheus text metrics"
+            "description": "Counters"
+          }
+        }
+      }
+    },
+    "/metrics/prometheus": {
+      "get": {
+        "summary": "Prometheus counters",
+        "responses": {
+          "200": {
+            "description": "Plain text"
           }
         }
       }
     },
     "/api/audit": {
       "post": {
-        "summary": "Dispatch task payload across specialized workers",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "task_id": {
-                    "type": "string"
-                  },
-                  "target_identifier": {
-                    "type": "string"
-                  },
-                  "primary_metric": {
-                    "type": "number"
-                  },
-                  "secondary_metric": {
-                    "type": "number"
-                  },
-                  "status_descriptor": {
-                    "type": "string"
-                  },
-                  "is_critical_flag": {
-                    "type": "boolean"
-                  }
-                },
-                "required": [
-                  "task_id",
-                  "target_identifier",
-                  "primary_metric"
-                ]
-              }
-            }
-          }
-        },
+        "summary": "Screen numeric metrics",
         "responses": {
           "200": {
-            "description": "Consensus dossier with HMAC signature"
+            "description": "Evaluation dossier"
+          },
+          "400": {
+            "description": "Potential identifier"
+          },
+          "401": {
+            "description": "Authorization required when configured"
+          },
+          "422": {
+            "description": "Invalid input"
           }
         }
       }
     },
     "/api/chat": {
       "post": {
-        "summary": "Air-gapped supervisory conversational assistant",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "query": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "query"
-                ]
-              }
-            }
-          }
-        },
+        "summary": "Mock supervisory response",
         "responses": {
           "200": {
-            "description": "Supervisory response"
+            "description": "Mock reply"
           }
         }
       }
     },
     "/api/audit/logs": {
       "get": {
-        "summary": "Retrieve and cryptographically verify HMAC audit trail",
+        "summary": "Read in-memory audit headers",
         "responses": {
           "200": {
-            "description": "Cryptographic audit trail"
+            "description": "Audit metadata"
           }
         }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Enabled when AUDIT_API_TOKEN is configured"
       }
     }
   }

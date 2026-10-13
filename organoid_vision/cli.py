@@ -7,6 +7,7 @@ import json
 import sys
 from .models import FrontierPayload
 from .agents import OrganoidVisionCoordinator
+from agents.base import SecurityException, ResourceLimitExceededException
 
 coordinator = OrganoidVisionCoordinator()
 
@@ -52,7 +53,7 @@ def main(argv=None):
         dossier = coordinator.process(payload)
         print("=" * 80)
         print(f"  ORGANOIDVISION: HIGH-CONTENT ORGANOID LUMEN & VIABILITY KINETIC AGENT")
-        print(f"  Domain: Biomedical Scientific Discovery & Multi-Omics | Standard: High-Content Screening (HCS) Imaging Standards")
+        print(f"  Domain: Biomedical Scientific Discovery & Multi-Omics | Standard: project-defined screening thresholds")
         print(f"  Task: {dossier['task_id']} | Status: [{dossier['overall_status']}] | Total Alerts: {dossier['total_alerts']}")
         print("=" * 80)
         for a in dossier["alerts"]:
@@ -74,6 +75,10 @@ def main(argv=None):
                 reader = csv.DictReader(f)
                 fieldnames = list(reader.fieldnames or [])
                 rows = list(reader)
+                required = {"task_id", "target_identifier", "primary_metric"}
+                if not required.issubset(fieldnames):
+                    print("Error: CSV must include task_id, target_identifier and primary_metric.", file=sys.stderr)
+                    return 1
         except FileNotFoundError:
             print(f"Error: Input file '{args.input}' not found.", file=sys.stderr)
             return 1
@@ -101,7 +106,7 @@ def main(argv=None):
                 row_dict["critical_count"] = dossier["critical_count"]
                 row_dict["consensus_summary"] = dossier["consensus_summary"]
                 out_rows.append(row_dict)
-            except (ValueError, TypeError) as e:
+            except (ValueError, TypeError, SecurityException, ResourceLimitExceededException) as e:
                 errors += 1
                 print(f"Warning: Skipping row {idx + 1} due to invalid data: {e}", file=sys.stderr)
 

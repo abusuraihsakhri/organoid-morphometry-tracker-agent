@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Organoid Metric Screening</title>
+<style>
+:root{color-scheme:dark;font:16px system-ui,Arial,sans-serif;--bg:#0c1322;--surface:#192437;--line:#41526d;--text:#f3f6fc;--muted:#c2cde0}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);line-height:1.5}main{max-width:1090px;margin:auto;padding:26px 18px 50px}h1{font-size:clamp(1.6rem,3vw,2.2rem);margin:0}h2{font-size:1.1rem;margin:0 0 18px}p{margin:8px 0}.muted{color:var(--muted)}.notice{border:1px solid #5d779a;background:#172b45;border-radius:10px;padding:14px;margin:20px 0;font-size:.91rem}.layout{display:grid;grid-template-columns:1fr 1.1fr;gap:18px}.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px;min-width:0}label{display:block;font-size:.89rem;font-weight:650;margin:0 0 5px}input{width:100%;background:#0c1727;border:1px solid #647b98;border-radius:7px;color:var(--text);padding:10px;font:inherit}input:focus-visible,button:focus-visible{outline:2px solid #9dcdff;outline-offset:2px}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{margin-bottom:14px}.hint,footer{color:var(--muted);font-size:.82rem}.check{display:flex;align-items:center;gap:10px;margin:8px 0 18px}.check input{width:19px;height:19px}.check label{margin:0}.buttons{display:flex;gap:9px;flex-wrap:wrap}button{font:inherit;background:#285c96;border:1px solid #84b7ed;color:white;border-radius:7px;padding:10px 15px;font-weight:650;cursor:pointer}button.alt{background:#24344d;border-color:#6985a8}button:disabled{opacity:.5;cursor:not-allowed}button:hover:not(:disabled){filter:brightness(1.15)}.summary{border:1px solid #536b87;background:#102138;padding:12px;border-radius:8px;margin-bottom:12px}.summary.routine{border-color:#60aa83}.summary.elevated{border-color:#efbf6c}.summary.critical{border-color:#e58c8c}.summary strong{display:block}.summary p{font-size:.86rem}.counters{display:flex;gap:12px;margin:0 0 14px}.counters div{flex:1;background:#0b1627;padding:10px;border:1px solid var(--line);border-radius:8px}.counters span{display:block;color:var(--muted);font-size:.78rem}pre{background:#0b1424;border:1px solid var(--line);border-radius:8px;max-height:445px;overflow:auto;padding:13px;white-space:pre-wrap;overflow-wrap:anywhere;font:12.5px/1.6 ui-monospace,Consolas,monospace}.error{color:#ffb0af;min-height:1.4em}.small{font-size:.82rem;color:var(--muted)}a{color:#acd1ff}footer{margin-top:22px}@media(max-width:780px){.layout{grid-template-columns:1fr}.panel{padding:18px}.row{grid-template-columns:1fr}}
+</style></head><body><main>
+<header><h1>Organoid Metric Screening</h1><p class="muted">Local, browser-based evaluation of this repository's deterministic threshold rules.</p></header>
+<div class="notice"><strong>Research demonstration, not a validated morphometry assay.</strong> This tool evaluates numeric values and flags; it does not segment microscopy images, measure volume, calculate lumen-to-wall ratios, estimate IC50, or provide clinical decision support. The thresholds are project defaults, not established biological reference intervals.</div>
+<div class="layout">
+<section class="panel"><h2>Input measurements</h2>
+<form id="form" novalidate>
+<div class="row"><div class="field"><label for="task">Task ID</label><input id="task" required maxlength="1000" value="TASK-001"></div><div class="field"><label for="target">Specimen ID</label><input id="target" required maxlength="1000" value="ORGANOID-01"></div></div>
+<div class="row"><div class="field"><label for="primary">Primary metric</label><input id="primary" type="number" step="any" value="28.5" required><p class="hint">Alert above 25</p></div><div class="field"><label for="secondary">Secondary metric</label><input id="secondary" type="number" step="any" value="14.2" required><p class="hint">Alert above 12</p></div></div>
+<div class="field"><label for="descriptor">Status descriptor</label><input id="descriptor" maxlength="1000" required value="DISCORDANT"><p class="hint">Anomaly keywords include DISCORDANT, ANOMALY, MUTANT, VIOLATION, FAIL and REJECT.</p></div>
+<div class="check"><input id="critical" type="checkbox"><label for="critical">Manual critical escalation flag</label></div>
+<div class="buttons"><button type="submit">Evaluate</button><button class="alt" id="reset" type="button">Reset</button></div>
+<p id="error" class="error" role="alert"></p></form></section>
+<section class="panel"><h2>Structured evaluation</h2>
+<div class="counters"><div><span>Session evaluations</span><strong id="count">0</strong></div><div><span>Alerts</span><strong id="nalerts">—</strong></div></div>
+<div class="summary" id="summary" aria-live="polite" role="status"><strong>Not yet evaluated</strong><p>Enter measurements and select Evaluate.</p></div>
+<pre id="output" tabindex="0">No result yet.</pre><button id="export" class="alt" type="button" disabled>Export JSON</button>
+<p class="small">Results are calculated locally. No backend calls, fabricated signed audit records, or persistent browser storage are used.</p></section></div>
+<footer>Use synthetic specimen identifiers only. Input pattern checks are not de-identification. Python CLI and API: <a href="https://github.com/abusuraihsakhri/organoid-morphometry-tracker-agent">source repository</a>.</footer>
+</main>
+<script>
+"use strict";
+(function(){
+const $=id=>document.getElementById(id),keywords=["DISCORDANT","ANOMALY","MUTANT","VIOLATION","FAIL","REJECT"];
+const sensitive=[/\bMRN[:#\s-]*\d{4,10}\b/i,/\b\d{3}-\d{2}-\d{4}\b/,/\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b/,/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/];
+let last=null,count=0;
+function str(id){const v=$(id).value.trim();if(!v||v.length>1000)throw Error("Text fields require 1–1000 characters.");if(sensitive.some(re=>re.test(v)))throw Error("Possible personal identifier detected. Use synthetic identifiers.");return v}
+function num(id){const raw=$(id).value.trim(),v=Number(raw);if(!raw||!Number.isFinite(v)||Math.abs(v)>1e9)throw Error("Metrics must be finite numbers within ±1,000,000,000.");return v}
+function evaluate(p){
+const alerts=[];
+if(p.primary_metric>25)alerts.push({origin_worker:"InvariantQCWorker",urgency:"ELEVATED_RISK",summary:"Primary metric exceeds project threshold (25)."});
+if(p.is_critical_flag||p.secondary_metric>12)alerts.push({origin_worker:"SafetyEscalationWorker",urgency:p.is_critical_flag?"CRITICAL_STAT_PANIC":"ELEVATED_RISK",summary:"Secondary metric or manual critical flag triggered."});
+if(keywords.some(k=>p.status_descriptor.toUpperCase().includes(k)))alerts.push({origin_worker:"ProtocolConformanceWorker",urgency:"ELEVATED_RISK",summary:"Status descriptor matches anomaly keyword."});
+const critical=alerts.some(a=>a.urgency==="CRITICAL_STAT_PANIC"),urgency=critical?"CRITICAL_STAT_PANIC":alerts.length?"ELEVATED_RISK":"ROUTINE";
+return{mode:"LOCAL_DEMONSTRATION",task_id:p.task_id,target_identifier:p.target_identifier,primary_metric:p.primary_metric,secondary_metric:p.secondary_metric,overall_urgency:urgency,integrity_status:critical?"RECALIBRATION_REQUIRED":alerts.length?"DISCORDANT_ANOMALY":"VALIDATED_OPTIMAL",total_alerts:alerts.length,critical_alerts_count:critical?1:0,alerts:alerts,audit_hash:null,timestamp:new Date().toISOString(),disclaimer:"Demo-only thresholds. No validated segmentation, morphometry, or signed audit trail."}
+}
+$("form").addEventListener("submit",e=>{e.preventDefault();$("error").textContent="";try{
+const p={task_id:str("task"),target_identifier:str("target"),primary_metric:num("primary"),secondary_metric:num("secondary"),status_descriptor:str("descriptor"),is_critical_flag:$("critical").checked};
+last=evaluate(p);count++;$("count").textContent=String(count);$("nalerts").textContent=String(last.total_alerts);
+$("summary").className="summary "+(last.overall_urgency==="ROUTINE"?"routine":last.overall_urgency==="ELEVATED_RISK"?"elevated":"critical");
+$("summary").querySelector("strong").textContent=last.overall_urgency.replaceAll("_"," ");$("summary").querySelector("p").textContent=last.total_alerts+" rule-based alert(s); not a biological diagnosis.";
+$("output").textContent=JSON.stringify(last,null,2);$("export").disabled=false;
+}catch(err){$("error").textContent=err.message;}});
+$("reset").addEventListener("click",()=>{$("form").reset();last=null;$("error").textContent="";$("nalerts").textContent="—";$("output").textContent="No result yet.";$("export").disabled=true;$("summary").className="summary";$("summary").querySelector("strong").textContent="Not yet evaluated";$("summary").querySelector("p").textContent="Enter measurements and select Evaluate.";});
+$("export").addEventListener("click",()=>{if(!last)return;const url=URL.createObjectURL(new Blob([JSON.stringify(last,null,2)+"\n"],{type:"application/json"}));const a=document.createElement("a");a.href=url;a.download="organoid-metric-evaluation.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});
+})();
+</script></body></html>

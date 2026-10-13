@@ -1,14 +1,15 @@
 """
 Pydantic v2 schemas and data definitions for Organoid Morphometry Tracker Agent.
 Domain: Clinical & Biomedical AI
-Standard: CAP / CLSI / ISO Standards
+Standard: Project-defined screening thresholds
 """
 import datetime
+import json
 from enum import Enum
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field, field_validator
 
-from .base import validate_input_string, validate_metric_value
+from .base import PHIGuard, SecurityException, validate_input_string, validate_metric_value
 
 
 class UrgencyLevel(str, Enum):
@@ -38,10 +39,25 @@ class SystemTaskPayload(BaseModel):
     def validate_string_fields(cls, v: str) -> str:
         return validate_input_string(v, field_name="text_field")
 
-    @field_validator("primary_metric", "secondary_metric")
+    @field_validator("primary_metric", "secondary_metric", mode="before")
     @classmethod
     def validate_metric_fields(cls, v: float) -> float:
         return validate_metric_value(v, field_name="metric")
+
+    @field_validator("attributes")
+    @classmethod
+    def validate_attributes(cls, value: Dict[str, Any]) -> Dict[str, Any]:
+        try:
+            serialized = json.dumps(value, allow_nan=False, ensure_ascii=False)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("attributes must contain finite JSON-compatible data") from exc
+        if len(serialized) > 10000:
+            raise ValueError("attributes exceed the 10000-character limit")
+        try:
+            PHIGuard.assert_no_phi(serialized)
+        except SecurityException as exc:
+            raise ValueError("attributes contain a potentially sensitive identifier") from exc
+        return value
 
 
 class AgentAlert(BaseModel):
@@ -51,7 +67,7 @@ class AgentAlert(BaseModel):
     summary: str
     technical_details: str
     actionable_remediation: str
-    standard_reference: str = "CAP / CLSI / ISO Standards"
+    standard_reference: str = "Project-defined screening thresholds"
     timestamp: str = Field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
 
     def to_dict(self) -> Dict[str, Any]:
@@ -69,7 +85,7 @@ class ConsensusDossier(BaseModel):
     total_alerts: int
     critical_alerts_count: int
     alerts: List[AgentAlert]
-    standard_reference: str = "CAP / CLSI / ISO Standards"
+    standard_reference: str = "Project-defined screening thresholds"
     consensus_summary: str
     audit_hash: str
     timestamp: str = Field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())

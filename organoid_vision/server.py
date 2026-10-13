@@ -11,11 +11,11 @@ coordinator = OrganoidVisionCoordinator()
 def create_app():
     try:
         from fastapi import FastAPI
-        from pydantic import BaseModel
+        from pydantic import BaseModel, Field
 
         app = FastAPI(
             title="OrganoidVision: High-Content Organoid Lumen & Viability Kinetic Agent",
-            description="Tracks 3D patient-derived organoid growth curves, lumen-to-wall ratios, necrotic core fractions, and drug dose-response cytotoxicity curves.",
+            description="Screens user-supplied numeric metrics and textual descriptors against project-specific demonstration thresholds.",
             version="2.0.0-FRONTIER",
         )
 
@@ -26,7 +26,7 @@ def create_app():
             secondary_metric: float = 14.2
             status_descriptor: str = "DISCORDANT_ANOMALY"
             is_critical_flag: bool = True
-            attributes: Dict[str, Any] = {}
+            attributes: Dict[str, Any] = Field(default_factory=dict)
 
         class ChatRequest(BaseModel):
             query: str
