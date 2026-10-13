@@ -1,116 +1,69 @@
 # Organoid Morphometry Tracker Agent
 
-> **Domain:** Clinical Decision Support & Biomedical Computing  
-> **Reference Guidelines & Standards:** `Standard Clinical Formulations & ISO/IEC Quality Frameworks`
+A Python CLI, FastAPI service and standalone browser demonstration for **rule-based screening of user-supplied organoid-associated numeric measurements**.
 
-<div align="center">
+The current implementation evaluates two numeric metrics, a status descriptor, and a manual escalation flag. It **does not** analyze microscopy images, perform segmentation, reconstruct 3D structures, compute lumen-to-wall ratios, fit growth curves, or calculate drug-response IC50 values. The 25 and 12 cutoffs are repository-defined demonstration thresholds, not validated biological reference ranges. Output is unsuitable for clinical decisions.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-3776AB.svg?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg?logo=fastapi&logoColor=white)
-![Audit Trail](https://img.shields.io/badge/Audit-HMAC--SHA256_Tamper--Evident-brightgreen.svg)
-![Zero-PHI Guard](https://img.shields.io/badge/Guard-Zero--PHI_Outbound-blue.svg)
-![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white)
+## Browser demonstration
 
-</div>
+Open [docs/index.html](docs/index.html) locally in a modern browser without installing Python. The same screen is served at the Python API root (/).
 
----
+Enter synthetic task/specimen identifiers and numeric metrics, select **Evaluate**, review the triggered alerts, and optionally **Export JSON**. Browser evaluation runs locally in JavaScript using the primary Python supervisor's rules (primary >25, secondary >12, critical flag, and anomaly keywords). It does **not** create HMAC audit signatures or contact any backend. No persistent browser storage is used.
 
-## 📖 What It Does
+## Python installation and examples
 
-**Organoid Morphometry Tracker Agent** is an advanced analytical and computational platform implementing 3D organoid lumen-to-wall morphometry & dose-response cytotoxicity tracker.
+Requirements: Python 3.10 or newer.
 
----
+~~~bash
+python -m pip install -e '.[test]'
+export AUDIT_SECRET_KEY="$(python -c 'import secrets; print(secrets.token_hex(32))')"
 
-## ⚙️ Key Capabilities & Algorithmic Modules
-
-- **Deterministic Calculation Engine**: Strict compliance with standard reference formulations and thresholds.
-- **Risk & Urgency Classification**: Multi-tier categorization with automated clinical/operational action recommendations.
-- **Validation & Guardrails**: Rigorous input bounds checking and anomaly detection.
-
----
-
-## 💻 CLI Quickstart & Usage
-
-### 1. Run a Single Audit Evaluation
-```bash
-python cli.py audit --task-id TASK-001 --target KEY-01 --primary 28.5 --secondary 14.2 --critical --status DISCORDANT
-```
-
-### 2. Batch Process CSV Records
-```bash
+python cli.py audit --task-id TASK-001 --target ORG-001 --primary 28.5 --secondary 14.2 --status DISCORDANT
 python cli.py batch -i sample.csv -o results.csv
-```
-
-### 3. Chat with the Supervisor
-```bash
-python cli.py chat "What is the system status?"
-```
-
-### 4. Verify Audit Trail Integrity
-```bash
 python cli.py verify-audit
-```
-
-### 5. Launch the REST API Server
-```bash
 python cli.py serve --host 127.0.0.1 --port 8000
-```
+~~~
 
-### Input Data Schema
+The API serves the browser at http://127.0.0.1:8000/ and interactive API documentation at http://127.0.0.1:8000/docs. The generated OpenAPI source of truth is at /openapi.json. The /metrics endpoint returns JSON; /metrics/prometheus provides text-format metrics. POST /api/audit evaluates input metrics.
 
-| Field | Description | Requirement |
-|:------|:------------|:------------|
-| `task_id` | Unique task / case identifier | Required |
-| `target_identifier` | Entity, specimen, or target key | Required |
-| `primary_metric` | Primary domain measurement or score | Required |
-| `secondary_metric` | Secondary kinetic or confidence score | Optional (default: 0.0) |
-| `is_critical_flag` | Emergency escalation trigger | Optional (default: false) |
-| `status_descriptor` | Status code or phenotype descriptor | Optional (default: "NOMINAL") |
+The second, older workflow remains supported via python organoid_vision_app.py audit. Its secondary metric threshold is 10 rather than 12. The two pipelines are not interchangeable.
 
----
+### CSV input
 
-## 🛡️ Security & Enterprise Architecture
+Required columns: task_id, target_identifier, primary_metric. Optional fields: secondary_metric, status_descriptor, is_critical_flag. Invalid rows are skipped and reported to stderr. See [sample.csv](sample.csv).
 
-* **Zero-PHI Outbound Interceptor:** Active AST and regex inspection blocking SSNs, MRNs, phone numbers, and patient identifiers.
-* **Tamper-Evident HMAC-SHA256 Audit Trail:** Chained, cryptographically signed logs for every evaluation and state transition.
-* **Air-Gapped LLM Reasoning Adapter:** Agnostic integration for local Ollama instances (`llama3`, `mistral`), Claude 3.5 Sonnet, GPT-4o, and deterministic test mocks.
-* **Active Learning Bayesian Calibration:** Dynamic tracker updating worker reliability weights and monitoring Brier calibration drift.
-* **FastAPI & Prometheus Telemetry:** Exposes OpenAPI 3.1 REST endpoints and operational Prometheus metrics (`/metrics`).
+## Privacy and security
 
----
+Use **synthetic or adequately de-identified** data only. Identifier-pattern checks do not guarantee de-identification or HIPAA compliance.
 
-## 🔧 Configuration
+AUDIT_SECRET_KEY is required for HMAC-SHA256 signing of **in-memory** audit records. Verification recalculates each entry's signature and chain link. Logs are not persisted and are not a durable regulated audit trail. Do not reuse the legacy signing key exposed in older repository history.
 
-Set the audit secret key (required for HMAC-SHA256 audit trail):
+When AUDIT_API_TOKEN is configured, /api/* and metrics endpoints require an Authorization header with the value Bearer followed by that token. Docker Compose requires both AUDIT_SECRET_KEY and AUDIT_API_TOKEN. Do not expose the service publicly without appropriate authentication, network controls and rate limiting.
 
-```bash
-# Generate a secure key
-python -c "import secrets; print(secrets.token_hex(32))"
+The browser tool never transmits entered values, but its basic identifier-pattern checks are not a de-identification procedure.
 
-# Set the environment variable
-export AUDIT_SECRET_KEY="your-generated-key"
-```
+## Testing
 
-## 🧪 Testing & Verification
+~~~bash
+pytest -q
+python -m compileall -q agents organoid_vision cli.py enrichment.py simulator.py
+python -m pip check
+~~~
 
-Run the automated test suite:
+GitHub Actions checks Python 3.10–3.12, package installation, the test suite, audit guards and browser JavaScript syntax.
 
-```bash
-pytest -v
-```
+## Docker
 
-Execute high-throughput batch simulation benchmarks:
+~~~bash
+export AUDIT_SECRET_KEY="$(python -c 'import secrets; print(secrets.token_hex(32))')"
+export AUDIT_API_TOKEN="$(python -c 'import secrets; print(secrets.token_urlsafe(32))')"
+docker compose up --build
+~~~
 
-```bash
-python simulator.py 1000
-```
+The local application is exposed on port 8000. Container builds exclude local .env files; only run the API on a trusted network unless production security controls are provided.
 
----
+## Architecture and limitations
 
-## 🐳 Container Deployment
+The core stack comprises Python, Pydantic v2, FastAPI, Uvicorn and standard-library cryptography. The LLM integration currently supports a deterministic **mock only**; OpenAI, Claude and Ollama providers are not implemented. Additional enrichment classes and the legacy organoid_vision workflow are demonstrations, not validated image-analysis systems.
 
-```bash
-docker build -t organoid-morphometry-tracker-agent .
-docker run -p 8000:8000 organoid-morphometry-tracker-agent
-```
+Licensed under the [MIT License](LICENSE).

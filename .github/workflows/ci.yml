@@ -29,6 +29,9 @@ jobs:
         pip install -e '.[test]'
         python -m pip check
 
+    - name: Check installable wheel
+      run: python -m pip wheel --no-deps --wheel-dir /tmp/organoid-wheels .
+
     - name: Check Python syntax
       run: python -m compileall -q agents organoid_vision cli.py enrichment.py simulator.py
 
@@ -49,7 +52,7 @@ jobs:
       run: |
         pytest -v
 
-    - name: Security SAST & Zero-PHI Audit
+    - name: HMAC and identifier-pattern smoke check
       run: |
         python -c "
         from agents.base import PHIGuard, AuditLogger
