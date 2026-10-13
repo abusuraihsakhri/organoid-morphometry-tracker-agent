@@ -32,6 +32,19 @@ jobs:
     - name: Check Python syntax
       run: python -m compileall -q agents organoid_vision cli.py enrichment.py simulator.py
 
+    - name: Check inline browser JavaScript
+      run: |
+        python - <<'PY'
+        import re
+        from pathlib import Path
+        content = Path("web/index.html").read_text(encoding="utf-8")
+        script = re.search(r"<script>(.*?)</script>", content, re.DOTALL)
+        if not script:
+            raise SystemExit("Inline script not found")
+        Path("/tmp/organoid-app.js").write_text(script.group(1), encoding="utf-8")
+        PY
+        node --check /tmp/organoid-app.js
+
     - name: Run Pytest Suite
       run: |
         pytest -v
