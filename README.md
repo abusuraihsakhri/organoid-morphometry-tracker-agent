@@ -64,6 +64,6 @@ The local application is exposed on port 8000. Container builds exclude local .e
 
 ## Architecture and limitations
 
-The core stack comprises Python, Pydantic v2, FastAPI, Uvicorn and standard-library cryptography. The LLM integration currently supports a deterministic **mock only**; OpenAI, Claude and Ollama providers are not implemented. Additional enrichment classes and the legacy organoid_vision workflow are demonstrations, not validated image-analysis systems.
+The core stack comprises Python, Pydantic v2, FastAPI, Uvicorn and standard-library cryptography. The LLM integration currently supports a deterministic **mock only**; External model-provider integrations are not implemented. Additional enrichment classes and the legacy organoid_vision workflow are demonstrations, not validated image-analysis systems.
 
 Licensed under the [MIT License](LICENSE).
