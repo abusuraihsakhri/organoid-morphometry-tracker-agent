@@ -1,11 +1,14 @@
 """
 FastAPI REST API Server for Organoid Morphometry Tracker Agent.
 """
+import hmac
+import os
 from pathlib import Path
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 from .base import AuditLogger, PHIGuard, SecurityException, ResourceLimitExceededException
+from .metrics import GLOBAL_METRICS
 from .models import SystemTaskPayload, ConsensusDossier
 from .supervisor import SystemSupervisor
 
@@ -18,12 +21,24 @@ app = FastAPI(
 )
 
 
+@app.middleware("http")
+async def api_token_guard(request: Request, call_next):
+    """Protect API operations when AUDIT_API_TOKEN is configured."""
+    token = os.environ.get("AUDIT_API_TOKEN")
+    if token and (request.url.path.startswith("/api/") or request.url.path in ("/metrics", "/metrics/prometheus")):
+        supplied = request.headers.get("authorization", "")
+        if not hmac.compare_digest(supplied, "Bearer " + token):
+            return JSONResponse(status_code=401, content={"detail": "Bearer token required"})
+    return await call_next(request)
+
+
 class ChatRequest(BaseModel):
     query: str
 
 
 @app.exception_handler(SecurityException)
 async def security_error_handler(request: Request, exc: SecurityException):
+    GLOBAL_METRICS.record_phi_block()
     return JSONResponse(status_code=400, content={"detail": "Input contains a potentially sensitive identifier."})
 
 
@@ -34,7 +49,7 @@ async def resource_error_handler(request: Request, exc: ResourceLimitExceededExc
 
 @app.get("/", include_in_schema=False)
 def index():
-    return FileResponse(Path(__file__).resolve().parent.parent / "web" / "index.html")
+    return FileResponse(Path(__file__).resolve().parent / "static" / "index.html")
 
 
 @app.get("/health")
@@ -49,6 +64,12 @@ def metrics():
         "audit_blocks_total": len(AuditLogger.get_trail()),
         "system_status": "NOMINAL_OPTIMAL"
     }
+
+
+@app.get("/metrics/prometheus")
+def prometheus_metrics():
+    from fastapi.responses import PlainTextResponse
+    return PlainTextResponse(GLOBAL_METRICS.export_prometheus_text())
 
 
 @app.post("/api/audit")

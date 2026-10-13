@@ -4,10 +4,11 @@ Domain: Biomedical Scientific Discovery & Multi-Omics
 Standard: High-Content Screening (HCS) Imaging Standards
 """
 import datetime
+import json
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional, Any
-from agents.base import validate_input_string, validate_metric_value
+from agents.base import PHIGuard, validate_input_string, validate_metric_value
 
 
 class ExecutionStatus(str, Enum):
@@ -33,6 +34,12 @@ class FrontierPayload:
         self.status_descriptor = validate_input_string(self.status_descriptor, "status_descriptor")
         self.primary_metric = validate_metric_value(self.primary_metric, "primary_metric")
         self.secondary_metric = validate_metric_value(self.secondary_metric, "secondary_metric")
+        for text in (self.task_id, self.target_identifier, self.status_descriptor):
+            PHIGuard.assert_no_phi(text)
+        attributes_json = json.dumps(self.attributes, allow_nan=False)
+        if len(attributes_json) > 10000:
+            raise ValueError("attributes exceed the 10000-character limit")
+        PHIGuard.assert_no_phi(attributes_json)
 
 
 @dataclass

@@ -54,3 +54,39 @@ def test_phi_audit_api_rejected_cleanly():
 def test_pages_copy_matches_api_page():
     root = Path(__file__).parent.parent
     assert (root / "docs/index.html").read_bytes() == (root / "web/index.html").read_bytes()
+    assert (root / "web/index.html").read_bytes() == (root / "agents/static/index.html").read_bytes()
+
+def test_protected_api_endpoints(monkeypatch):
+    monkeypatch.setenv("AUDIT_API_TOKEN", "test-private-token")
+    client = TestClient(app)
+    assert client.get("/health").status_code == 200
+    assert client.get("/api/audit/logs").status_code == 401
+    assert client.get("/metrics/prometheus").status_code == 401
+    response = client.get("/metrics/prometheus", headers={"Authorization": "Bearer test-private-token"})
+    assert response.status_code == 200
+    assert "system_tasks_total" in response.text
+
+
+def test_batch_skips_phi_and_invalid_values(tmp_path):
+    from cli import main
+    input_file = tmp_path / "input.csv"
+    output_file = tmp_path / "result.csv"
+    input_file.write_text("task_id,target_identifier,primary_metric,secondary_metric,status_descriptor\n"
+                          "GOOD,ORG-01,20,3,NOMINAL\n"
+                          "BAD,MRN-123456,20,3,NOMINAL\n"
+                          "HUGE,ORG-02,10000000000,1,NOMINAL\n", encoding="utf-8")
+    assert main(["batch", "-i", str(input_file), "-o", str(output_file)]) == 0
+    data = output_file.read_text(encoding="utf-8")
+    assert "GOOD" in data and "BAD" not in data and "HUGE" not in data
+
+
+def test_optional_real_llm_provider_never_silently_mocked():
+    from agents.llm_factory import LLMFactory
+    with pytest.raises(ValueError, match="Only the deterministic mock"):
+        LLMFactory.create("openai")
+
+
+def test_frontier_payload_phi_guard():
+    from organoid_vision.models import FrontierPayload
+    with pytest.raises(SecurityException):
+        FrontierPayload("SYNTH", "MRN-123456", 1, 2, "NOMINAL")
