@@ -1,7 +1,7 @@
 """
 Data Models & Telemetry Definitions for OrganoidVision: High-Content Organoid Lumen & Viability Kinetic Agent.
 Domain: Biomedical Scientific Discovery & Multi-Omics
-Standard: High-Content Screening (HCS) Imaging Standards
+Standard: Project-defined screening thresholds
 """
 import datetime
 import json
@@ -50,7 +50,7 @@ class AgentTelemetryAlert:
     summary: str
     technical_details: str
     actionable_remediation: str
-    standard_reference: str = "High-Content Screening (HCS) Imaging Standards"
+    standard_reference: str = "Project-defined screening thresholds"
     timestamp: str = field(default_factory=lambda: datetime.datetime.now(datetime.timezone.utc).isoformat())
 
     def to_dict(self) -> Dict[str, Any]:

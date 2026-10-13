@@ -1,7 +1,7 @@
 """
 Core Algorithmic Engine & Cryptographic / Biological Logic for OrganoidVision: High-Content Organoid Lumen & Viability Kinetic Agent.
 Domain: Biomedical Scientific Discovery & Multi-Omics
-Standard: High-Content Screening (HCS) Imaging Standards
+Standard: project-defined screening thresholds
 """
 import math
 from typing import Dict, Any, List, Optional
@@ -9,7 +9,7 @@ from .models import FrontierPayload, AgentTelemetryAlert, ExecutionStatus
 
 
 class FrontierDomainEngine:
-    STANDARD = "High-Content Screening (HCS) Imaging Standards"
+    STANDARD = "project-defined screening thresholds"
     PRIMARY_BOUND = 25.0
     SECONDARY_BOUND = 10.0
 
@@ -18,7 +18,7 @@ class FrontierDomainEngine:
         if value > cls.PRIMARY_BOUND:
             return {
                 "summary": "Primary Domain Boundary Deviation",
-                "details": f"Parameter value ({value:.3f}) exceeds operational threshold ({cls.PRIMARY_BOUND:.1f}) under High-Content Screening (HCS) Imaging Standards.",
+                "details": f"Parameter value ({value:.3f}) exceeds operational threshold ({cls.PRIMARY_BOUND:.1f}) under project-defined screening thresholds.",
                 "remediation": "Engage parameter recalibration and algorithmic verification routine.",
             }
         return None
@@ -39,7 +39,7 @@ class FrontierDomainEngine:
         if any(flag in desc_upper for flag in ["VIOLATION", "DISCORDANT", "ANOMALY", "MUTANT", "LEAK"]):
             return {
                 "summary": "Specification / Protocol Anomaly Identified",
-                "details": f"Telemetry status flag '{descriptor}' violates High-Content Screening (HCS) Imaging Standards conformance matrix.",
+                "details": f"Telemetry status flag '{descriptor}' violates project-defined screening thresholds conformance matrix.",
                 "remediation": "Execute automated rollback or secondary consensus verification.",
             }
         return None

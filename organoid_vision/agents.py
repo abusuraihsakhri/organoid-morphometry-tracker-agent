@@ -93,7 +93,7 @@ class OrganoidVisionCoordinator:
             "critical_count": crit_count,
             "warning_count": warn_count,
             "alerts": [a.to_dict() for a in all_alerts],
-            "standard_specification": "High-Content Screening (HCS) Imaging Standards",
+            "standard_specification": "project-defined screening thresholds",
             "consensus_summary": f"Consensus evaluation completed across 3 sub-agents with status [{status.value}].",
         }
 
@@ -105,6 +105,6 @@ class OrganoidVisionCoordinator:
         if "status" in q or "ledger" in q:
             return f"OrganoidVision: High-Content Organoid Lumen & Viability Kinetic Agent currently managing {len(self.execution_ledger)} execution tasks in air-gapped memory."
         elif "standard" in q or "spec" in q:
-            return "Active runtime operating strictly according to High-Content Screening (HCS) Imaging Standards specifications."
+            return "Active runtime operating strictly according to project-defined screening specifications."
         else:
             return f"OrganoidVision: High-Content Organoid Lumen & Viability Kinetic Agent executive coordinator online. Zero-telemetry on-premises surveillance active."

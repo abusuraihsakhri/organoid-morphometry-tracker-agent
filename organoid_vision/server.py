@@ -15,7 +15,7 @@ def create_app():
 
         app = FastAPI(
             title="OrganoidVision: High-Content Organoid Lumen & Viability Kinetic Agent",
-            description="Tracks 3D patient-derived organoid growth curves, lumen-to-wall ratios, necrotic core fractions, and drug dose-response cytotoxicity curves.",
+            description="Screens user-supplied numeric metrics and textual descriptors against project-specific demonstration thresholds.",
             version="2.0.0-FRONTIER",
         )
 

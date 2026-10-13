@@ -53,7 +53,7 @@ def main(argv=None):
         dossier = coordinator.process(payload)
         print("=" * 80)
         print(f"  ORGANOIDVISION: HIGH-CONTENT ORGANOID LUMEN & VIABILITY KINETIC AGENT")
-        print(f"  Domain: Biomedical Scientific Discovery & Multi-Omics | Standard: High-Content Screening (HCS) Imaging Standards")
+        print(f"  Domain: Biomedical Scientific Discovery & Multi-Omics | Standard: project-defined screening thresholds")
         print(f"  Task: {dossier['task_id']} | Status: [{dossier['overall_status']}] | Total Alerts: {dossier['total_alerts']}")
         print("=" * 80)
         for a in dossier["alerts"]:
